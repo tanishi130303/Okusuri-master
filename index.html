@@ -160,6 +160,46 @@
     .v.strong { font-size: 21px; }
     .v { font-size: 15px; }
   }
+  /* 祝賀演出 */
+  .celebrate { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(1200px 800px at 50% 30%, rgba(31,80,72,.92), rgba(8,24,21,.96)); overflow: hidden; }
+  #fxCanvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .celebrate-card { position: relative; z-index: 2; text-align: center; padding: 30px 26px; max-width: 420px;
+    animation: celepop .6s cubic-bezier(.2,1.3,.4,1); }
+  @keyframes celepop { 0% { transform: scale(.5); opacity: 0; } 70% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }
+  .trophy { font-size: 78px; line-height: 1; filter: drop-shadow(0 6px 14px rgba(0,0,0,.4)); animation: bob 2.2s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+  .cele-sub { margin-top: 10px; font-size: 12px; letter-spacing: .38em; font-weight: 700; color: #e9c97e; text-indent: .38em; }
+  .cele-title { margin: 6px 0 4px; font-size: 52px; font-weight: 900; letter-spacing: .02em;
+    background: linear-gradient(110deg, #ffe9a8, #b8862f 35%, #ffe9a8 60%, #e9c97e);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    background-size: 220% auto; animation: shimmer 2.6s linear infinite; text-shadow: 0 2px 30px rgba(233,201,126,.3); }
+  @keyframes shimmer { to { background-position: 220% center; } }
+  .cele-msg { color: #f3efe4; font-size: 15px; line-height: 1.7; margin: 14px 0 24px; }
+  .cele-msg b { color: #ffe9a8; }
+  .cele-btn { font-family: inherit; font-weight: 800; font-size: 15px; cursor: pointer; border: none;
+    padding: 14px 36px; border-radius: 99px; color: #15332d;
+    background: linear-gradient(135deg, #ffe9a8, #b8862f); box-shadow: 0 8px 24px -6px rgba(184,134,47,.6); }
+  .cele-btn:active { transform: translateY(1px); }
+  .celebrate-card.grand .cele-title { font-size: 60px; }
+  .celebrate-card.grand .trophy { font-size: 92px; }
+
+  /* 戒めの演出 */
+  .scold { position: fixed; inset: 0; z-index: 110; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(900px 700px at 50% 40%, rgba(150,30,20,.5), rgba(40,8,5,.78)); }
+  .scold-card { text-align: center; max-width: 360px; margin: 0 26px; padding: 26px 24px; border-radius: 18px;
+    background: #1c0f0d; border: 2px solid var(--clay);
+    box-shadow: 0 0 0 4px rgba(192,85,60,.25), 0 20px 50px -16px rgba(0,0,0,.7);
+    animation: shake .5s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes shake {
+    10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); }
+    30%,50%,70% { transform: translateX(-8px); } 40%,60% { transform: translateX(8px); }
+  }
+  .scold-icon { font-size: 46px; animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  .scold-title { font-size: 26px; font-weight: 900; color: #ff8f76; letter-spacing: .14em; margin: 6px 0 10px; }
+  .scold-msg { color: #f3e6e2; font-size: 14.5px; line-height: 1.7; }
+  .scold-msg b { color: #ffcf6b; }
 </style>
 </head>
 <body>
@@ -240,6 +280,25 @@
     <button class="reset" id="resetBtn">進捗をリセット</button>
     <span class="note">進捗はこの端末のブラウザに自動保存されます（アカウント不要）。</span>
   </footer>
+</div>
+
+<div class="celebrate hidden" id="celebrate">
+  <canvas id="fxCanvas"></canvas>
+  <div class="celebrate-card">
+    <div class="trophy" id="celeTrophy">🏆</div>
+    <div class="cele-sub" id="celeSub">MILESTONE</div>
+    <h2 class="cele-title" id="celeTitle">おめでとう！</h2>
+    <p class="cele-msg" id="celeMsg"></p>
+    <button class="cele-btn" id="celebrateClose">続ける</button>
+  </div>
+</div>
+
+<div class="scold hidden" id="scold">
+  <div class="scold-card">
+    <div class="scold-icon">⚠️</div>
+    <div class="scold-title">要注意</div>
+    <p class="scold-msg" id="scoldMsg"></p>
+  </div>
 </div>
 
 <script>
@@ -368,6 +427,7 @@ const DECK = [
 
 const CATS = [...new Set(DECK.map(c => c.cat))];
 const STORAGE_KEY = "yakuzai_progress_v2";
+const MILESTONE_KEY = "yakuzai_milestone_v1";
 const BOX_WEIGHT = { 1:18, 2:9, 3:5, 4:2, 5:1 };
 const MAX_BOX = 5;
 const MISS_CAP = 20; // 学習済みで箱1（間違い）のカードがこの数に達したら新規を一時停止
@@ -382,11 +442,13 @@ let flipped = false;
 let sessionCount = 0;
 let lastId = null;
 
+let celebratedMilestone = 0;
 function load(){
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     progress = raw ? JSON.parse(raw) : {};
   } catch(e){ progress = {}; }
+  try { celebratedMilestone = parseInt(localStorage.getItem(MILESTONE_KEY), 10) || 0; } catch(e){ celebratedMilestone = 0; }
 }
 function save(){
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch(e){}
@@ -521,6 +583,8 @@ function grade(known){
   else { st.wrong++; st.box = 1; }
   progress[cur.id] = st;
   save();
+  if(!known && st.wrong > 5) admonish(cur, st.wrong);
+  maybeCelebrate();
   sessionCount++;
   lastId = cur.id;
   // 次カードへ移る瞬間はめくり戻しアニメを無効化（裏面のチラ見え防止）
@@ -581,12 +645,128 @@ function closeList(){ $("listOverlay").classList.add("hidden"); }
 $("openListBtn").onclick = openList;
 $("closeListBtn").onclick = closeList;
 $("listOverlay").onclick = (e) => { if(e.target === $("listOverlay")) closeList(); };
+$("scold").onclick = () => { if(scoldTimer) clearTimeout(scoldTimer); $("scold").classList.add("hidden"); };
 
 document.addEventListener("keydown", (e) => {
   if(e.key === " " || e.key === "Enter"){ e.preventDefault(); flip(); }
   else if(flipped && (e.key === "1" || e.key === "j")) grade(false);
   else if(flipped && (e.key === "2" || e.key === "k")) grade(true);
 });
+
+
+// ---- 定着マイルストーン＆戒めの演出 ----
+function masteredCount(){ return DECK.filter(c => { const st = progress[c.id]; return st && st.box >= 4; }).length; }
+
+function maybeCelebrate(){
+  const count = masteredCount();
+  const milestone = Math.floor(count / 10) * 10; // 直近の10の倍数
+  if(milestone >= 10 && milestone > celebratedMilestone){
+    celebratedMilestone = milestone;
+    try { localStorage.setItem(MILESTONE_KEY, String(milestone)); } catch(e){}
+    celebrate(milestone / 10, milestone);
+  }
+}
+
+let fxRAF = null;
+function celebrate(level, count){
+  const ov = $("celebrate");
+  const grand = (count >= 120);
+  // メッセージ・装飾を段階で変える
+  const trophies = grand ? "👑🏆👑" : (level >= 8 ? "🏆🏆🏆" : (level >= 5 ? "🏆🏆" : (level >= 3 ? "🏆" : "🎉")));
+  $("celeTrophy").textContent = trophies;
+  $("celeSub").textContent = grand ? "ALL MASTERED" : ("MILESTONE  " + count);
+  $("celeTitle").textContent = grand ? "おめでとう！" : (count + "種 定着！");
+  $("celeMsg").innerHTML = grand
+    ? "全120種の内服薬を<br><b>すべて定着</b>させました。<br>お薬手帳マスターの誕生です。"
+    : ("ここまで <b>" + count + "種</b> を定着。<br>この調子で次の節目へ！");
+  ov.querySelector(".celebrate-card").classList.toggle("grand", grand);
+  ov.classList.remove("hidden");
+
+  const canvas = $("fxCanvas");
+  const ctx = canvas.getContext("2d");
+  function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener("resize", resize);
+
+  const COLORS = ["#b8862f","#1f6f63","#c0553c","#e9c97e","#f3efe4","#2f9d8a","#ffd76b"];
+  const parts = [];
+  const W = () => canvas.width, H = () => canvas.height;
+
+  // 段階で強度を変える（大きいほど豪華）
+  const rainEvery   = Math.max(2, 5 - Math.floor(level / 3));
+  const rainPer     = 2 + level;
+  const fwEvery     = Math.max(14, 44 - level * 3);
+  const openingFw   = 1 + level;
+
+  function rain(n){
+    for(let i=0;i<n;i++){
+      parts.push({ type:"confetti", x: Math.random()*W(), y: -20 - Math.random()*H()*0.3,
+        vx:(Math.random()-0.5)*1.5, vy:2+Math.random()*3, size:6+Math.random()*8,
+        rot:Math.random()*Math.PI, vrot:(Math.random()-0.5)*0.3,
+        color:COLORS[(Math.random()*COLORS.length)|0], sway:Math.random()*Math.PI*2 });
+    }
+  }
+  function firework(cx, cy){
+    const col = COLORS[(Math.random()*COLORS.length)|0];
+    const m = 30 + level*3 + (Math.random()*16|0);
+    for(let i=0;i<m;i++){
+      const a = (Math.PI*2*i)/m, sp = 2.2 + Math.random()*(2.5 + level*0.25);
+      parts.push({ type:"spark", x:cx, y:cy, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+        size:2.2+Math.random()*2, color:col, life:1, decay:0.011+Math.random()*0.01 });
+    }
+  }
+
+  let frame = 0, running = true;
+  function loop(){
+    if(!running) return;
+    fxRAF = requestAnimationFrame(loop);
+    ctx.clearRect(0,0,W(),H());
+    frame++;
+    if(frame % rainEvery === 0) rain(rainPer);
+    if(frame % fwEvery === 0) firework(W()*(0.12+Math.random()*0.76), H()*(0.1+Math.random()*0.4));
+    for(let i=parts.length-1;i>=0;i--){
+      const p = parts[i];
+      if(p.type === "confetti"){
+        p.sway += 0.1; p.x += p.vx + Math.sin(p.sway)*0.8; p.y += p.vy; p.rot += p.vrot;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6); ctx.restore();
+        if(p.y > H()+30) parts.splice(i,1);
+      } else {
+        p.vy += 0.05; p.vx *= 0.99; p.vy *= 0.99; p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+        if(p.life <= 0){ parts.splice(i,1); continue; }
+        ctx.globalAlpha = Math.max(0,p.life); ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+      }
+    }
+  }
+  for(let i=0;i<openingFw;i++){
+    setTimeout(()=>firework(W()*(0.15+Math.random()*0.7), H()*(0.15+Math.random()*0.3)), i*180);
+  }
+  rain(30 + level*10);
+  loop();
+  try { if(navigator.vibrate) navigator.vibrate(grand ? [60,40,60,40,60,40,200] : [50,40,90]); } catch(e){}
+
+  $("celebrateClose").onclick = () => {
+    running = false;
+    if(fxRAF) cancelAnimationFrame(fxRAF);
+    window.removeEventListener("resize", resize);
+    ov.classList.add("hidden");
+  };
+}
+
+// 同じカードの誤答が5を超えたときの戒め
+let scoldTimer = null;
+function admonish(card, wrong){
+  const ov = $("scold");
+  $("scoldMsg").innerHTML = "<b>" + card.brand + "</b> を <b>" + wrong + "回</b> 取りこぼしています。<br>"
+    + card.generic + "（" + card.klass + "）<br>語尾とクラスから攻略を。";
+  ov.classList.remove("hidden");
+  const c = ov.querySelector(".scold-card");
+  c.style.animation = "none"; void c.offsetWidth; c.style.animation = "";
+  try { if(navigator.vibrate) navigator.vibrate([130,70,130,70,220]); } catch(e){}
+  if(scoldTimer) clearTimeout(scoldTimer);
+  scoldTimer = setTimeout(() => ov.classList.add("hidden"), 3000);
+}
 
 // ---- 起動 ----
 load();
