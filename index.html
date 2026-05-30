@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>内服 連想トレーニング</title>
+<meta name="theme-color" content="#15332d" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="内服連想" />
+<meta name="application-name" content="内服連想" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --paper: #f3efe4;
+    --ink: #15332d;
+    --ink-soft: #4a5f59;
+    --teal: #1f6f63;
+    --gold: #b8862f;
+    --clay: #c0553c;
+    --line: #d8d1bf;
+  }
+  body {
+    font-family: 'Zen Kaku Gothic New', -apple-system, 'Hiragino Sans', sans-serif;
+    background: radial-gradient(1200px 600px at 80% -10%, #e9e3d2 0%, transparent 60%), var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 22px 18px 40px; }
+
+  .hd { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .hd-mark {
+    width: 46px; height: 46px; flex: none; display: grid; place-items: center;
+    background: var(--ink); color: var(--paper); border-radius: 12px;
+    font-size: 24px; font-weight: 900; box-shadow: 4px 4px 0 var(--gold);
+  }
+  .hd h1 { font-size: 21px; font-weight: 900; letter-spacing: .02em; }
+  .sub { margin-top: 3px; font-size: 12.5px; color: var(--ink-soft); }
+  .arr { color: var(--gold); font-weight: 700; }
+
+  .bar-wrap { margin-bottom: 16px; }
+  .bar { display: flex; height: 12px; border-radius: 99px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
+  .seg { display: block; transition: flex-grow .5s ease; min-width: 0; }
+  .seg.mastered { background: var(--teal); }
+  .seg.learning { background: var(--gold); }
+  .seg.fresh { background: #e3ddcc; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+  .dot.mastered { background: var(--teal); }
+  .dot.learning { background: var(--gold); }
+  .dot.fresh { background: #cfc7b2; }
+  .muted { color: #9a9482; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 20px; }
+  .chip {
+    font-family: inherit; font-size: 12.5px; font-weight: 500; padding: 6px 12px;
+    border-radius: 99px; cursor: pointer; border: 1.5px solid var(--line);
+    background: #fff; color: var(--ink-soft); transition: all .15s;
+  }
+  .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .card-area { perspective: 1400px; }
+  .card {
+    position: relative; width: 100%; min-height: 270px; transform-style: preserve-3d;
+    transition: transform .55s cubic-bezier(.4,.2,.2,1); cursor: pointer;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .face {
+    position: absolute; inset: 0; backface-visibility: hidden; border-radius: 18px;
+    padding: 26px 24px; border: 1.5px solid var(--line); display: flex; flex-direction: column;
+    box-shadow: 0 18px 40px -28px rgba(21,51,45,.5);
+  }
+  .front { background: linear-gradient(140deg, #ffffff 0%, #fbf8ef 100%); align-items: center; justify-content: center; text-align: center; }
+  .back { background: linear-gradient(140deg, #16382f 0%, #1f5048 100%); color: #f3efe4; transform: rotateY(180deg); justify-content: center; gap: 14px; }
+  .cat-tag { position: absolute; top: 16px; left: 18px; font-size: 11px; letter-spacing: .08em; font-weight: 700; color: var(--gold); }
+  .back .cat-tag { color: #e9c97e; }
+  .label { font-size: 12px; letter-spacing: .14em; color: var(--ink-soft); margin-bottom: 10px; }
+  .brand { font-size: 30px; font-weight: 900; line-height: 1.25; letter-spacing: .01em; }
+  .hint { margin-top: 22px; font-size: 11.5px; color: #b3ab97; }
+  .row { border-bottom: 1px solid rgba(255,255,255,.12); padding-bottom: 11px; }
+  .row:last-child { border-bottom: none; }
+  .k { display: block; font-size: 11px; letter-spacing: .1em; color: #9fc4ba; margin-bottom: 4px; }
+  .v { font-size: 16px; line-height: 1.45; }
+  .v.strong { font-size: 24px; font-weight: 900; }
+  .v.hx { color: #f0e2bd; }
+
+  .controls { margin-top: 18px; }
+  .btn { font-family: inherit; font-weight: 700; font-size: 15px; border: none; border-radius: 13px; padding: 15px; cursor: pointer; width: 100%; transition: transform .1s, filter .15s; }
+  .btn:active { transform: translateY(1px); }
+  .primary { background: var(--ink); color: var(--paper); }
+  .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dont { background: #fff; color: var(--clay); border: 1.5px solid var(--clay); }
+  .know { background: var(--teal); color: #fff; }
+  .key { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; font-size: 11px; margin-left: 6px; background: rgba(0,0,0,.14); }
+  .dont .key { background: rgba(192,85,60,.16); }
+  .hidden { display: none !important; }
+
+  .meta { margin-top: 14px; font-size: 12px; color: var(--ink-soft); text-align: center; }
+  .toast { margin-top: 10px; text-align: center; font-size: 12.5px; font-weight: 500; padding: 7px; border-radius: 9px; animation: fade .4s ease; }
+  .toast.know { background: rgba(31,111,99,.12); color: var(--teal); }
+  .toast.dont { background: rgba(192,85,60,.12); color: var(--clay); }
+  @keyframes fade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; } }
+
+  .ft { margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .reset { font-family: inherit; font-size: 12.5px; color: var(--clay); background: none; border: 1.5px solid transparent; cursor: pointer; padding: 6px 14px; border-radius: 8px; transition: border-color .15s; }
+  .reset:hover { border-color: var(--clay); }
+  .note { font-size: 11px; color: #9a9482; text-align: center; }
+
+  @media (max-width: 480px) {
+    .brand { font-size: 25px; }
+    .v.strong { font-size: 21px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hd">
+    <div class="hd-mark">膳</div>
+    <div>
+      <h1>内服 連想トレーニング</h1>
+      <p class="sub">商品名 <span class="arr">→</span> 一般名 <span class="arr">→</span> 薬効群 <span class="arr">→</span> 既往</p>
+    </div>
+  </header>
+
+  <div class="bar-wrap">
+    <div class="bar">
+      <span class="seg mastered" id="segMastered"></span>
+      <span class="seg learning" id="segLearning"></span>
+      <span class="seg fresh" id="segFresh"></span>
+    </div>
+    <div class="legend">
+      <span><i class="dot mastered"></i>定着 <b id="nMastered">0</b></span>
+      <span><i class="dot learning"></i>学習中 <b id="nLearning">0</b></span>
+      <span><i class="dot fresh"></i>未着手 <b id="nFresh">0</b></span>
+      <span class="muted">／ 全 <b id="nTotal">0</b></span>
+    </div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="card-area" id="cardArea">
+    <div class="card" id="card">
+      <div class="face front">
+        <div class="cat-tag" id="frontCat"></div>
+        <div class="label">商品名</div>
+        <div class="brand" id="brand"></div>
+        <div class="hint">タップ / スペースキーで答えを表示</div>
+      </div>
+      <div class="face back">
+        <div class="cat-tag" id="backCat"></div>
+        <div class="row"><span class="k">一般名</span><span class="v strong" id="generic"></span></div>
+        <div class="row"><span class="k">薬効群</span><span class="v" id="klass"></span></div>
+        <div class="row"><span class="k">推測される既往</span><span class="v hx" id="hx"></span></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" id="flipBtn">答えを見る</button>
+      <div class="grade hidden" id="gradeBtns">
+        <button class="btn dont" id="dontBtn">わからなかった <span class="key">1</span></button>
+        <button class="btn know" id="knowBtn">わかった <span class="key">2</span></button>
+      </div>
+    </div>
+
+    <div class="meta"><span id="cardStat"></span><span class="muted" id="sessionStat"></span></div>
+    <div id="toastSlot"></div>
+  </div>
+
+  <div class="card-area hidden" id="emptyArea">
+    <p class="note" style="padding:60px 0;text-align:center;">カテゴリを1つ以上選んでください。</p>
+  </div>
+
+  <footer class="ft">
+    <button class="reset" id="resetBtn">進捗をリセット</button>
+    <span class="note">進捗はこの端末のブラウザに自動保存されます（アカウント不要）。</span>
+  </footer>
+</div>
+
+<script>
+const DECK = [
+  { id:"d01", cat:"循環器", brand:"アムロジン / ノルバスク", generic:"アムロジピン", klass:"Ca拮抗薬（ジヒドロピリジン系）", hx:"高血圧、狭心症" },
+  { id:"d02", cat:"循環器", brand:"アダラート", generic:"ニフェジピン", klass:"Ca拮抗薬", hx:"高血圧、狭心症" },
+  { id:"d03", cat:"循環器", brand:"ヘルベッサー", generic:"ジルチアゼム", klass:"Ca拮抗薬（非DHP系）", hx:"狭心症、頻脈性不整脈、高血圧" },
+  { id:"d04", cat:"循環器", brand:"ワソラン", generic:"ベラパミル", klass:"Ca拮抗薬（非DHP系）", hx:"頻脈性不整脈、狭心症" },
+  { id:"d05", cat:"循環器", brand:"ブロプレス", generic:"カンデサルタン", klass:"ARB", hx:"高血圧、慢性心不全" },
+  { id:"d06", cat:"循環器", brand:"ディオバン", generic:"バルサルタン", klass:"ARB", hx:"高血圧" },
+  { id:"d07", cat:"循環器", brand:"ニューロタン", generic:"ロサルタン", klass:"ARB", hx:"高血圧、糖尿病性腎症" },
+  { id:"d08", cat:"循環器", brand:"ミカルディス", generic:"テルミサルタン", klass:"ARB", hx:"高血圧" },
+  { id:"d09", cat:"循環器", brand:"オルメテック", generic:"オルメサルタン", klass:"ARB", hx:"高血圧" },
+  { id:"d10", cat:"循環器", brand:"レニベース", generic:"エナラプリル", klass:"ACE阻害薬", hx:"高血圧、慢性心不全（空咳に注意）" },
+  { id:"d11", cat:"循環器", brand:"メインテート", generic:"ビソプロロール", klass:"β遮断薬（β1選択）", hx:"高血圧、心不全、頻脈性不整脈、狭心症" },
+  { id:"d12", cat:"循環器", brand:"アーチスト", generic:"カルベジロール", klass:"αβ遮断薬", hx:"慢性心不全、高血圧、頻脈性心房細動" },
+  { id:"d13", cat:"循環器", brand:"ラシックス", generic:"フロセミド", klass:"ループ利尿薬", hx:"心不全、腎不全、浮腫、高血圧" },
+  { id:"d14", cat:"循環器", brand:"アルダクトン", generic:"スピロノラクトン", klass:"MRA（K保持性利尿薬）", hx:"心不全、肝硬変、原発性アルドステロン症、高血圧" },
+  { id:"d15", cat:"循環器", brand:"フルイトラン", generic:"トリクロルメチアジド", klass:"サイアザイド系利尿薬", hx:"高血圧、浮腫" },
+  { id:"d16", cat:"循環器", brand:"ニトロール / ニトロペン", generic:"硝酸イソソルビド / ニトログリセリン", klass:"硝酸薬", hx:"狭心症、心不全" },
+  { id:"d17", cat:"抗血栓", brand:"バイアスピリン", generic:"アスピリン", klass:"抗血小板薬（低用量）", hx:"心筋梗塞・脳梗塞の既往、冠動脈ステント留置後" },
+  { id:"d18", cat:"抗血栓", brand:"プラビックス", generic:"クロピドグレル", klass:"抗血小板薬（P2Y12阻害）", hx:"脳梗塞・心筋梗塞、PCI/ステント後" },
+  { id:"d19", cat:"抗血栓", brand:"エフィエント", generic:"プラスグレル", klass:"抗血小板薬（P2Y12阻害）", hx:"急性冠症候群、PCI後（DAPT）" },
+  { id:"d20", cat:"抗血栓", brand:"プレタール", generic:"シロスタゾール", klass:"抗血小板薬（PDE3阻害）", hx:"脳梗塞、末梢動脈疾患（PAD）" },
+  { id:"d21", cat:"抗血栓", brand:"ワーファリン", generic:"ワルファリン", klass:"抗凝固薬（ビタミンK拮抗）", hx:"機械弁置換後、心房細動、静脈血栓塞栓症" },
+  { id:"d22", cat:"抗血栓", brand:"イグザレルト", generic:"リバーロキサバン", klass:"DOAC（Xa阻害）", hx:"非弁膜症性心房細動、VTE" },
+  { id:"d23", cat:"抗血栓", brand:"エリキュース", generic:"アピキサバン", klass:"DOAC（Xa阻害）", hx:"非弁膜症性心房細動、VTE" },
+  { id:"d24", cat:"抗血栓", brand:"リクシアナ", generic:"エドキサバン", klass:"DOAC（Xa阻害）", hx:"非弁膜症性心房細動、VTE" },
+  { id:"d25", cat:"抗血栓", brand:"プラザキサ", generic:"ダビガトラン", klass:"DOAC（トロンビン阻害）", hx:"非弁膜症性心房細動" },
+  { id:"d26", cat:"脂質", brand:"リピトール", generic:"アトルバスタチン", klass:"スタチン（HMG-CoA還元酵素阻害）", hx:"脂質異常症、動脈硬化性疾患の二次予防" },
+  { id:"d27", cat:"脂質", brand:"クレストール", generic:"ロスバスタチン", klass:"スタチン", hx:"脂質異常症" },
+  { id:"d28", cat:"脂質", brand:"リバロ", generic:"ピタバスタチン", klass:"スタチン", hx:"脂質異常症" },
+  { id:"d29", cat:"脂質", brand:"メバロチン", generic:"プラバスタチン", klass:"スタチン", hx:"脂質異常症" },
+  { id:"d30", cat:"脂質", brand:"ゼチーア", generic:"エゼチミブ", klass:"小腸コレステロールトランスポーター阻害", hx:"脂質異常症（スタチンと併用が多い）" },
+  { id:"d31", cat:"脂質", brand:"リピディル", generic:"フェノフィブラート", klass:"フィブラート系", hx:"高トリグリセリド血症" },
+  { id:"d32", cat:"糖尿病", brand:"ジャヌビア / グラクティブ", generic:"シタグリプチン", klass:"DPP-4阻害薬", hx:"2型糖尿病" },
+  { id:"d33", cat:"糖尿病", brand:"トラゼンタ", generic:"リナグリプチン", klass:"DPP-4阻害薬", hx:"2型糖尿病（腎機能低下でも使いやすい）" },
+  { id:"d34", cat:"糖尿病", brand:"テネリア", generic:"テネリグリプチン", klass:"DPP-4阻害薬", hx:"2型糖尿病" },
+  { id:"d35", cat:"糖尿病", brand:"メトグルコ", generic:"メトホルミン", klass:"ビグアナイド", hx:"2型糖尿病（造影検査前は休薬）" },
+  { id:"d36", cat:"糖尿病", brand:"アマリール", generic:"グリメピリド", klass:"SU薬", hx:"2型糖尿病（低血糖に注意）" },
+  { id:"d37", cat:"糖尿病", brand:"フォシーガ", generic:"ダパグリフロジン", klass:"SGLT2阻害薬", hx:"2型糖尿病、慢性心不全、慢性腎臓病" },
+  { id:"d38", cat:"糖尿病", brand:"ジャディアンス", generic:"エンパグリフロジン", klass:"SGLT2阻害薬", hx:"2型糖尿病、慢性心不全" },
+  { id:"d39", cat:"糖尿病", brand:"アクトス", generic:"ピオグリタゾン", klass:"チアゾリジン薬", hx:"2型糖尿病（浮腫・心不全に注意）" },
+  { id:"d40", cat:"糖尿病", brand:"ベイスン", generic:"ボグリボース", klass:"α-グルコシダーゼ阻害薬", hx:"2型糖尿病、食後高血糖" },
+  { id:"d41", cat:"消化器", brand:"タケプロン", generic:"ランソプラゾール", klass:"PPI", hx:"胃十二指腸潰瘍、GERD、抗血栓薬による胃粘膜保護" },
+  { id:"d42", cat:"消化器", brand:"ネキシウム", generic:"エソメプラゾール", klass:"PPI", hx:"GERD、胃十二指腸潰瘍" },
+  { id:"d43", cat:"消化器", brand:"パリエット", generic:"ラベプラゾール", klass:"PPI", hx:"GERD、胃十二指腸潰瘍" },
+  { id:"d44", cat:"消化器", brand:"タケキャブ", generic:"ボノプラザン", klass:"P-CAB", hx:"GERD、胃十二指腸潰瘍、H. pylori除菌" },
+  { id:"d45", cat:"消化器", brand:"ガスター", generic:"ファモチジン", klass:"H2受容体拮抗薬", hx:"胃潰瘍、胃炎" },
+  { id:"d46", cat:"消化器", brand:"ムコスタ", generic:"レバミピド", klass:"胃粘膜保護薬", hx:"胃炎、NSAIDs併用時の胃保護" },
+  { id:"d47", cat:"消化器", brand:"マグミット", generic:"酸化マグネシウム", klass:"塩類下剤", hx:"便秘症（高Mg血症に注意）" },
+  { id:"d48", cat:"内分泌", brand:"チラーヂンS", generic:"レボチロキシン", klass:"甲状腺ホルモン製剤", hx:"甲状腺機能低下症、甲状腺術後" },
+  { id:"d49", cat:"内分泌", brand:"メルカゾール", generic:"チアマゾール", klass:"抗甲状腺薬", hx:"バセドウ病、甲状腺機能亢進症" },
+  { id:"d50", cat:"呼吸器", brand:"シングレア / キプレス", generic:"モンテルカスト", klass:"ロイコトリエン受容体拮抗薬", hx:"気管支喘息、アレルギー性鼻炎" },
+  { id:"d51", cat:"呼吸器", brand:"ムコダイン", generic:"カルボシステイン", klass:"去痰薬", hx:"気道分泌異常、慢性気道疾患" },
+  { id:"d52", cat:"呼吸器", brand:"テオドール", generic:"テオフィリン", klass:"キサンチン誘導体（気管支拡張）", hx:"気管支喘息、COPD（中毒域に注意）" },
+  { id:"d53", cat:"睡眠・抗不安薬", brand:"マイスリー", generic:"ゾルピデム", klass:"非BZ系睡眠薬", hx:"不眠症（入眠障害）" },
+  { id:"d54", cat:"睡眠・抗不安薬", brand:"レンドルミン", generic:"ブロチゾラム", klass:"ベンゾジアゼピン系睡眠薬", hx:"不眠症" },
+  { id:"d55", cat:"睡眠・抗不安薬", brand:"デパス", generic:"エチゾラム", klass:"抗不安薬（チエノジアゼピン）", hx:"不安・緊張、不眠（依存に注意）" },
+  { id:"d56", cat:"睡眠・抗不安薬", brand:"ベルソムラ", generic:"スボレキサント", klass:"オレキシン受容体拮抗薬", hx:"不眠症" },
+  { id:"d57", cat:"神経内科", brand:"リリカ", generic:"プレガバリン", klass:"神経障害性疼痛治療薬（Caチャネルα2δ）", hx:"神経障害性疼痛、線維筋痛症" },
+  { id:"d58", cat:"疼痛", brand:"ロキソニン", generic:"ロキソプロフェン", klass:"NSAIDs", hx:"疼痛、発熱、消炎" },
+  { id:"d59", cat:"疼痛", brand:"セレコックス", generic:"セレコキシブ", klass:"COX-2選択的NSAIDs", hx:"関節リウマチ、変形性関節症" },
+  { id:"d60", cat:"疼痛", brand:"カロナール", generic:"アセトアミノフェン", klass:"解熱鎮痛薬", hx:"疼痛、発熱" },
+  { id:"d61", cat:"代謝", brand:"フェブリク", generic:"フェブキソスタット", klass:"尿酸生成抑制薬（XO阻害）", hx:"高尿酸血症、痛風" },
+  { id:"d62", cat:"代謝", brand:"ザイロリック", generic:"アロプリノール", klass:"尿酸生成抑制薬（XO阻害）", hx:"高尿酸血症、痛風" },
+  { id:"d63", cat:"泌尿器", brand:"ハルナール", generic:"タムスロシン", klass:"α1遮断薬", hx:"前立腺肥大症（術中虹彩緊張低下症候群に注意）" },
+  { id:"d64", cat:"泌尿器", brand:"ベシケア", generic:"ソリフェナシン", klass:"抗コリン薬", hx:"過活動膀胱" },
+  { id:"d65", cat:"循環器", brand:"アジルバ", generic:"アジルサルタン", klass:"ARB", hx:"高血圧" },
+  { id:"d66", cat:"循環器", brand:"エンレスト", generic:"サクビトリル・バルサルタン", klass:"ARNI（ARB＋ネプリライシン阻害）", hx:"慢性心不全、高血圧" },
+  { id:"d67", cat:"循環器", brand:"セロケン / ロプレソール", generic:"メトプロロール", klass:"β遮断薬（β1選択）", hx:"高血圧、狭心症、頻脈性不整脈" },
+  { id:"d68", cat:"循環器", brand:"サンリズム", generic:"ピルシカイニド", klass:"抗不整脈薬（Naチャネル遮断・Ic群）", hx:"発作性心房細動、頻脈性不整脈" },
+  { id:"d69", cat:"脂質", brand:"リポバス", generic:"シンバスタチン", klass:"スタチン", hx:"脂質異常症" },
+  { id:"d70", cat:"糖尿病", brand:"スーグラ", generic:"イプラグリフロジン", klass:"SGLT2阻害薬", hx:"2型糖尿病" },
+  { id:"d71", cat:"糖尿病", brand:"リベルサス", generic:"セマグルチド（経口）", klass:"GLP-1受容体作動薬", hx:"2型糖尿病" },
+  { id:"d72", cat:"消化器", brand:"ガスモチン", generic:"モサプリド", klass:"消化管運動改善薬（5-HT4作動）", hx:"機能性ディスペプシア、慢性胃炎" },
+  { id:"d73", cat:"消化器", brand:"ペンタサ / アサコール", generic:"メサラジン", klass:"5-アミノサリチル酸製剤", hx:"潰瘍性大腸炎、クローン病" },
+  { id:"d74", cat:"消化器", brand:"アミティーザ", generic:"ルビプロストン", klass:"上皮機能変容薬（ClC-2活性化）", hx:"慢性便秘症" },
+  { id:"d75", cat:"呼吸器", brand:"メプチン", generic:"プロカテロール", klass:"短時間作用性β2刺激薬（SABA）", hx:"気管支喘息、COPD" },
+  { id:"d76", cat:"呼吸器", brand:"スピリーバ", generic:"チオトロピウム", klass:"長時間作用性抗コリン薬（LAMA・吸入）", hx:"COPD、気管支喘息" },
+  { id:"d77", cat:"呼吸器", brand:"アドエア / レルベア", generic:"フルチカゾン・サルメテロール等", klass:"吸入ステロイド＋LABA配合", hx:"気管支喘息、COPD" },
+  { id:"d78", cat:"内分泌", brand:"プレドニン", generic:"プレドニゾロン", klass:"副腎皮質ステロイド（経口）", hx:"自己免疫・炎症性疾患、喘息増悪、各種維持療法" },
+  { id:"d79", cat:"内分泌", brand:"ボナロン / フォサマック", generic:"アレンドロン酸", klass:"ビスホスホネート", hx:"骨粗鬆症（顎骨壊死に注意）" },
+  { id:"d80", cat:"内分泌", brand:"エディロール", generic:"エルデカルシトール", klass:"活性型ビタミンD3製剤", hx:"骨粗鬆症（高Ca血症に注意）" },
+  { id:"d81", cat:"代謝", brand:"ユリノーム", generic:"ベンズブロマロン", klass:"尿酸排泄促進薬", hx:"高尿酸血症、痛風" },
+  { id:"d82", cat:"代謝", brand:"コルヒチン", generic:"コルヒチン", klass:"微小管阻害薬（抗痛風）", hx:"痛風発作の治療・予防、家族性地中海熱" },
+  { id:"d83", cat:"泌尿器", brand:"アボルブ", generic:"デュタステリド", klass:"5α還元酵素阻害薬", hx:"前立腺肥大症（PSA値が低下する点に注意）" },
+  { id:"d84", cat:"泌尿器", brand:"ベタニス", generic:"ミラベグロン", klass:"β3刺激薬", hx:"過活動膀胱" },
+  { id:"d85", cat:"疼痛", brand:"ボルタレン", generic:"ジクロフェナク", klass:"NSAIDs", hx:"疼痛、消炎、発熱" },
+  { id:"d86", cat:"疼痛", brand:"トラムセット", generic:"トラマドール・アセトアミノフェン", klass:"オピオイド配合鎮痛薬", hx:"慢性疼痛、変形性関節症、抜歯後疼痛" },
+  { id:"d87", cat:"疼痛", brand:"オキシコンチン", generic:"オキシコドン", klass:"オピオイド（強オピオイド）", hx:"がん性疼痛、中等度〜高度の慢性疼痛" },
+  { id:"d88", cat:"睡眠・抗不安薬", brand:"アモバン", generic:"ゾピクロン", klass:"非ベンゾジアゼピン系睡眠薬", hx:"不眠症（苦味の訴えが特徴）" },
+  { id:"d89", cat:"睡眠・抗不安薬", brand:"ルネスタ", generic:"エスゾピクロン", klass:"非ベンゾジアゼピン系睡眠薬", hx:"不眠症" },
+  { id:"d90", cat:"睡眠・抗不安薬", brand:"ハルシオン", generic:"トリアゾラム", klass:"ベンゾジアゼピン系睡眠薬（超短時間）", hx:"不眠症（入眠障害）" },
+  { id:"d91", cat:"睡眠・抗不安薬", brand:"ロゼレム", generic:"ラメルテオン", klass:"メラトニン受容体作動薬", hx:"不眠症（入眠障害）" },
+  { id:"d92", cat:"睡眠・抗不安薬", brand:"デエビゴ", generic:"レンボレキサント", klass:"オレキシン受容体拮抗薬", hx:"不眠症" },
+  { id:"d93", cat:"睡眠・抗不安薬", brand:"ソラナックス / コンスタン", generic:"アルプラゾラム", klass:"ベンゾジアゼピン系抗不安薬", hx:"不安・緊張、パニック障害" },
+  { id:"d94", cat:"抗うつ薬", brand:"パキシル", generic:"パロキセチン", klass:"SSRI", hx:"うつ病、パニック障害、社交不安障害（中断症候群に注意）" },
+  { id:"d95", cat:"抗うつ薬", brand:"ジェイゾロフト", generic:"セルトラリン", klass:"SSRI", hx:"うつ病、パニック障害、PTSD" },
+  { id:"d96", cat:"抗うつ薬", brand:"レクサプロ", generic:"エスシタロプラム", klass:"SSRI", hx:"うつ病、社会不安障害（QT延長に注意）" },
+  { id:"d97", cat:"抗うつ薬", brand:"デプロメール / ルボックス", generic:"フルボキサミン", klass:"SSRI", hx:"うつ病、強迫性障害、社会不安障害" },
+  { id:"d98", cat:"抗うつ薬", brand:"サインバルタ", generic:"デュロキセチン", klass:"SNRI", hx:"うつ病、糖尿病性神経障害、慢性疼痛" },
+  { id:"d99", cat:"抗うつ薬", brand:"リフレックス / レメロン", generic:"ミルタザピン", klass:"NaSSA", hx:"うつ病（不眠・食欲低下の合併例）" },
+  { id:"d100", cat:"抗うつ薬", brand:"トリンテリックス", generic:"ボルチオキセチン", klass:"セロトニン再取り込み阻害・受容体調節", hx:"うつ病" },
+  { id:"d101", cat:"抗うつ薬", brand:"トリプタノール", generic:"アミトリプチリン", klass:"三環系抗うつ薬", hx:"うつ病、神経障害性疼痛、片頭痛予防、夜尿症" },
+  { id:"d102", cat:"抗菌薬", brand:"サワシリン / パセトシン", generic:"アモキシシリン", klass:"ペニシリン系", hx:"細菌感染症、H. pylori除菌" },
+  { id:"d103", cat:"抗菌薬", brand:"オーグメンチン / クラバモックス", generic:"アモキシシリン・クラブラン酸", klass:"βラクタマーゼ阻害薬配合ペニシリン", hx:"細菌感染症（耐性菌カバー）" },
+  { id:"d104", cat:"抗菌薬", brand:"ケフレックス", generic:"セファレキシン", klass:"第1世代セフェム", hx:"皮膚軟部組織感染、気道感染" },
+  { id:"d105", cat:"抗菌薬", brand:"フロモックス", generic:"セフカペンピボキシル", klass:"第3世代セフェム（経口）", hx:"気道・尿路・皮膚感染" },
+  { id:"d106", cat:"抗菌薬", brand:"メイアクト", generic:"セフジトレンピボキシル", klass:"第3世代セフェム（経口）", hx:"気道・尿路・皮膚感染" },
+  { id:"d107", cat:"抗菌薬", brand:"クラビット", generic:"レボフロキサシン", klass:"フルオロキノロン", hx:"呼吸器・尿路感染（腱障害・QT延長に注意）" },
+  { id:"d108", cat:"抗菌薬", brand:"ジスロマック", generic:"アジスロマイシン", klass:"マクロライド", hx:"気道感染、非定型肺炎、性感染症（クラミジア）" },
+  { id:"d109", cat:"抗菌薬", brand:"クラリス / クラリシッド", generic:"クラリスロマイシン", klass:"マクロライド", hx:"気道感染、H. pylori除菌、非結核性抗酸菌症" },
+  { id:"d110", cat:"抗菌薬", brand:"ミノマイシン", generic:"ミノサイクリン", klass:"テトラサイクリン系", hx:"各種感染、ざ瘡、非定型肺炎（小児・妊婦は注意）" },
+  { id:"d111", cat:"抗菌薬", brand:"バクタ / バクトラミン", generic:"ST合剤（スルファメトキサゾール・トリメトプリム）", klass:"葉酸合成阻害薬", hx:"ニューモシスチス肺炎の予防・治療、尿路感染" },
+  { id:"d112", cat:"神経内科", brand:"メネシット / ネオドパストン", generic:"レボドパ・カルビドパ", klass:"L-ドパ配合製剤", hx:"パーキンソン病" },
+  { id:"d113", cat:"神経内科", brand:"ビ・シフロール", generic:"プラミペキソール", klass:"ドパミン受容体作動薬", hx:"パーキンソン病、レストレスレッグス症候群" },
+  { id:"d114", cat:"神経内科", brand:"デパケン / セレニカ", generic:"バルプロ酸ナトリウム", klass:"抗てんかん薬（気分安定薬）", hx:"てんかん、双極性障害の躁、片頭痛予防（妊婦は禁忌）" },
+  { id:"d115", cat:"神経内科", brand:"テグレトール", generic:"カルバマゼピン", klass:"抗てんかん薬", hx:"部分てんかん、三叉神経痛、双極性障害（皮疹・SJSに注意）" },
+  { id:"d116", cat:"神経内科", brand:"イーケプラ", generic:"レベチラセタム", klass:"抗てんかん薬", hx:"てんかん（部分・全般）" },
+  { id:"d117", cat:"神経内科", brand:"ラミクタール", generic:"ラモトリギン", klass:"抗てんかん薬", hx:"てんかん、双極性障害（皮疹・SJSに注意）" },
+  { id:"d118", cat:"神経内科", brand:"アリセプト", generic:"ドネペジル", klass:"コリンエステラーゼ阻害薬", hx:"アルツハイマー型・レビー小体型認知症" },
+  { id:"d119", cat:"神経内科", brand:"メマリー", generic:"メマンチン", klass:"NMDA受容体拮抗薬", hx:"中等度〜高度アルツハイマー型認知症" },
+  { id:"d120", cat:"神経内科", brand:"イミグラン", generic:"スマトリプタン", klass:"トリプタン（5-HT1B/1D作動）", hx:"片頭痛発作、群発頭痛" }
+];
+
+const CATS = [...new Set(DECK.map(c => c.cat))];
+const STORAGE_KEY = "yakuzai_progress_v2";
+const BOX_WEIGHT = { 1:18, 2:9, 3:5, 4:2, 5:1 };
+const MAX_BOX = 5;
+
+function defaultStat(){ return { box:1, correct:0, wrong:0, lastSeen:0, seen:0 }; }
+
+// ---- 状態 ----
+let progress = {};
+let activeCats = new Set(CATS);
+let currentId = null;
+let flipped = false;
+let sessionCount = 0;
+let lastId = null;
+
+function load(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    progress = raw ? JSON.parse(raw) : {};
+  } catch(e){ progress = {}; }
+}
+function save(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch(e){}
+}
+
+function pool(){ return DECK.filter(c => activeCats.has(c.cat)); }
+
+function pickNext(excludeId){
+  const p = pool();
+  if(p.length === 0) return null;
+  let cand = (p.length > 1 && excludeId) ? p.filter(c => c.id !== excludeId) : p;
+  const now = Date.now();
+  const weights = cand.map(c => {
+    const st = progress[c.id] || defaultStat();
+    let w = BOX_WEIGHT[st.box] || 1;
+    if(now - (st.lastSeen||0) < 25000) w *= 0.3;
+    if(!st.seen) w *= 1.6;
+    return w;
+  });
+  const total = weights.reduce((a,b)=>a+b, 0);
+  let r = Math.random() * total;
+  for(let i=0;i<cand.length;i++){ r -= weights[i]; if(r <= 0) return cand[i].id; }
+  return cand[cand.length-1].id;
+}
+
+// ---- DOM ----
+const $ = id => document.getElementById(id);
+
+function renderChips(){
+  const box = $("chips");
+  box.innerHTML = "";
+  CATS.forEach(cat => {
+    const b = document.createElement("button");
+    b.className = "chip" + (activeCats.has(cat) ? " on" : "");
+    b.textContent = cat;
+    b.onclick = () => {
+      if(activeCats.has(cat)){ if(activeCats.size > 1) activeCats.delete(cat); }
+      else activeCats.add(cat);
+      const stillValid = currentId && pool().some(c => c.id === currentId);
+      if(!stillValid){ currentId = pickNext(lastId); flipped = false; }
+      renderAll();
+    };
+    box.appendChild(b);
+  });
+}
+
+function renderStats(){
+  const p = pool();
+  let mastered=0, learning=0, fresh=0;
+  p.forEach(c => {
+    const st = progress[c.id];
+    if(!st || !st.seen) fresh++;
+    else if(st.box >= 4) mastered++;
+    else learning++;
+  });
+  $("segMastered").style.flexGrow = mastered || 0.0001;
+  $("segLearning").style.flexGrow = learning || 0.0001;
+  $("segFresh").style.flexGrow = fresh || 0.0001;
+  $("nMastered").textContent = mastered;
+  $("nLearning").textContent = learning;
+  $("nFresh").textContent = fresh;
+  $("nTotal").textContent = p.length;
+}
+
+function renderCard(){
+  const cur = DECK.find(c => c.id === currentId);
+  if(!cur){
+    $("cardArea").classList.add("hidden");
+    $("emptyArea").classList.remove("hidden");
+    return;
+  }
+  $("cardArea").classList.remove("hidden");
+  $("emptyArea").classList.add("hidden");
+
+  $("frontCat").textContent = cur.cat;
+  $("backCat").textContent = cur.cat;
+  $("brand").textContent = cur.brand;
+  $("generic").textContent = cur.generic;
+  $("klass").textContent = cur.klass;
+  $("hx").textContent = cur.hx;
+
+  $("card").classList.toggle("flipped", flipped);
+  $("flipBtn").classList.toggle("hidden", flipped);
+  $("gradeBtns").classList.toggle("hidden", !flipped);
+
+  const st = progress[cur.id];
+  $("cardStat").textContent = (st && st.seen)
+    ? `この薬：箱 ${st.box}/${MAX_BOX}・正 ${st.correct} / 誤 ${st.wrong}`
+    : "この薬は初出題";
+  $("sessionStat").textContent = `　今セッション ${sessionCount} 枚`;
+}
+
+function renderAll(){ renderStats(); renderCard(); }
+
+function flip(){ flipped = !flipped; renderCard(); }
+
+function toast(known){
+  const slot = $("toastSlot");
+  slot.innerHTML = "";
+  const t = document.createElement("div");
+  t.className = "toast " + (known ? "know" : "dont");
+  t.textContent = known ? "定着箱を1つ前進" : "苦手箱へ — 早めに再出題します";
+  slot.appendChild(t);
+  setTimeout(() => { if(slot.firstChild === t) slot.innerHTML = ""; }, 2200);
+}
+
+function grade(known){
+  const cur = DECK.find(c => c.id === currentId);
+  if(!cur || !flipped) return;
+  const st = Object.assign(defaultStat(), progress[cur.id] || {});
+  st.seen++; st.lastSeen = Date.now();
+  if(known){ st.correct++; st.box = Math.min(MAX_BOX, st.box + 1); }
+  else { st.wrong++; st.box = 1; }
+  progress[cur.id] = st;
+  save();
+  toast(known);
+  sessionCount++;
+  lastId = cur.id;
+  currentId = pickNext(cur.id);
+  flipped = false;
+  renderAll();
+}
+
+function reset(){
+  progress = {}; save(); sessionCount = 0; lastId = null;
+  currentId = pickNext(null); flipped = false;
+  $("toastSlot").innerHTML = "";
+  renderAll();
+}
+
+// ---- イベント ----
+$("card").onclick = flip;
+$("flipBtn").onclick = (e) => { e.stopPropagation(); flip(); };
+$("knowBtn").onclick = (e) => { e.stopPropagation(); grade(true); };
+$("dontBtn").onclick = (e) => { e.stopPropagation(); grade(false); };
+$("resetBtn").onclick = () => { if(confirm("すべての学習進捗を消去します。よろしいですか？")) reset(); };
+
+document.addEventListener("keydown", (e) => {
+  if(e.key === " " || e.key === "Enter"){ e.preventDefault(); flip(); }
+  else if(flipped && (e.key === "1" || e.key === "j")) grade(false);
+  else if(flipped && (e.key === "2" || e.key === "k")) grade(true);
+});
+
+// ---- 起動 ----
+load();
+renderChips();
+currentId = pickNext(null);
+renderAll();
+</script>
+
+<script>
+/* ============================================================
+   PWA セットアップ（単一ファイルのまま）
+   - アイコンを端末上で生成（日本語フォントを利用）
+   - manifest を Blob で生成して注入 → ホーム画面でアプリ化
+   ============================================================ */
+(function setupPWA(){
+  function makeIcon(size){
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const x = c.getContext("2d");
+    // 背景グラデーション
+    const g = x.createLinearGradient(0, 0, size, size);
+    g.addColorStop(0, "#15332d");
+    g.addColorStop(1, "#1f5048");
+    x.fillStyle = g;
+    x.fillRect(0, 0, size, size);
+    // 中央の文字（マスク安全領域内に収める）
+    x.fillStyle = "#f3efe4";
+    x.textAlign = "center";
+    x.textBaseline = "middle";
+    x.font = "900 " + Math.round(size * 0.46) + "px 'Zen Kaku Gothic New', sans-serif";
+    x.fillText("膳", size / 2, size * 0.44);
+    // 金色のアクセントバー
+    x.fillStyle = "#b8862f";
+    const bw = size * 0.30, bh = size * 0.045, bx = (size - bw) / 2, by = size * 0.72, r = bh / 2;
+    x.beginPath();
+    x.moveTo(bx + r, by);
+    x.arcTo(bx + bw, by, bx + bw, by + bh, r);
+    x.arcTo(bx + bw, by + bh, bx, by + bh, r);
+    x.arcTo(bx, by + bh, bx, by, r);
+    x.arcTo(bx, by, bx + bw, by, r);
+    x.closePath();
+    x.fill();
+    return c.toDataURL("image/png");
+  }
+
+  let done = false;
+  function inject(){
+    if (done) return;
+    done = true;
+    let icon192, icon512;
+    try {
+      icon192 = makeIcon(192);
+      icon512 = makeIcon(512);
+    } catch (e) { return; }
+
+    const manifest = {
+      name: "内服 連想トレーニング",
+      short_name: "内服連想",
+      start_url: ".",
+      scope: ".",
+      display: "standalone",
+      orientation: "portrait",
+      background_color: "#f3efe4",
+      theme_color: "#15332d",
+      icons: [
+        { src: icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+        { src: icon512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      ]
+    };
+    try {
+      const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+      const mlink = document.createElement("link");
+      mlink.rel = "manifest";
+      mlink.href = URL.createObjectURL(blob);
+      document.head.appendChild(mlink);
+    } catch (e) {}
+
+    const apple = document.createElement("link");
+    apple.rel = "apple-touch-icon";
+    apple.setAttribute("sizes", "192x192");
+    apple.href = icon192;
+    document.head.appendChild(apple);
+
+    const fav = document.createElement("link");
+    fav.rel = "icon";
+    fav.type = "image/png";
+    fav.href = icon192;
+    document.head.appendChild(fav);
+  }
+
+  // Webフォント読み込み後に生成（未対応環境では即時）
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(inject).catch(inject);
+    setTimeout(inject, 1500); // フォント取得失敗時の保険
+  } else {
+    inject();
+  }
+})();
+</script>
+</body>
+</html>
