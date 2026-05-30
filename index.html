@@ -583,10 +583,18 @@ function grade(known){
   else { st.wrong++; st.box = 1; }
   progress[cur.id] = st;
   save();
-  if(!known && st.wrong > 5) admonish(cur, st.wrong);
   maybeCelebrate();
   sessionCount++;
   lastId = cur.id;
+
+  // 誤答が5回を超えたら戒めを出し、次へ進まず同じカードの答えを再表示
+  if(!known && st.wrong > 5){
+    admonish(cur, st.wrong);
+    flipped = true;     // 答え面を表示したまま
+    renderAll();
+    return;
+  }
+
   // 次カードへ移る瞬間はめくり戻しアニメを無効化（裏面のチラ見え防止）
   const cardEl = $("card");
   cardEl.classList.add("instant");
