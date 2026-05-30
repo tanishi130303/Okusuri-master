@@ -145,6 +145,7 @@
   .empty-list { text-align: center; color: var(--teal); padding: 30px 0; font-weight: 700; }
   .li { border: 1.5px solid var(--line); border-radius: 12px; padding: 13px 14px; margin-bottom: 9px; background: #fff; }
   .li-brand { font-size: 17px; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .li-cat { font-size: 10.5px; font-weight: 700; color: var(--gold); background: rgba(184,134,47,.12); padding: 2px 7px; border-radius: 99px; }
   .li-generic { font-size: 14px; font-weight: 700; color: var(--teal); margin-top: 3px; }
   .li-klass { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
   .li-hx { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
@@ -230,7 +231,7 @@
         <span id="listTitle">箱1の薬</span>
         <button class="closebtn" id="closeListBtn">閉じる</button>
       </div>
-      <div class="sheet-note">一度学習して間違えたカード（箱1）を、誤答が多い順に表示しています。未学習は除外、ジャンルは伏せています。</div>
+      <div class="sheet-note">一度学習して間違えたカード（箱1）を、誤答が多い順に表示しています。未学習は除外しています。</div>
       <div id="listBody"></div>
     </div>
   </div>
@@ -568,7 +569,7 @@ function renderList(){
     const el = document.createElement("div");
     el.className = "li";
     el.innerHTML =
-      '<div class="li-brand">'+c.brand+' '+tag+'</div>' +
+      '<div class="li-brand">'+c.brand+' <span class="li-cat">'+c.cat+'</span> '+tag+'</div>' +
       '<div class="li-generic">'+c.generic+'</div>' +
       '<div class="li-klass">'+c.klass+'</div>' +
       '<div class="li-hx">既往: '+c.hx+'</div>' + origin;
