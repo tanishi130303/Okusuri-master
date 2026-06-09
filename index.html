@@ -60,11 +60,15 @@
   .capnote { margin-top: 9px; font-size: 11.5px; line-height: 1.5; color: var(--clay); background: rgba(192,85,60,.10); border-radius: 9px; padding: 8px 11px; }
   .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 20px; }
   .chip {
-    font-family: inherit; font-size: 12.5px; font-weight: 500; padding: 6px 12px;
-    border-radius: 99px; cursor: pointer; border: 1.5px solid var(--line);
-    background: #fff; color: var(--ink-soft); transition: all .15s;
+    font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 7px 13px;
+    border-radius: 99px; cursor: pointer; border: 1.5px dashed #c4bca6;
+    background: transparent; color: #a39b85; opacity: .8; transition: all .15s;
   }
-  .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .chip.on {
+    background: var(--teal); color: #fff; border: 1.5px solid var(--teal);
+    font-weight: 700; opacity: 1; box-shadow: 0 3px 10px -4px rgba(31,111,99,.55);
+  }
+  .chip.on::before { content: "✓ "; font-weight: 900; }
 
   .card-area { perspective: 1400px; }
   .card {
@@ -495,6 +499,7 @@ function renderChips(){
       else activeCats.add(cat);
       const stillValid = currentId && pool().some(c => c.id === currentId);
       if(!stillValid){ currentId = pickNext(lastId); flipped = false; }
+      renderChips();
       renderAll();
     };
     box.appendChild(b);
